@@ -1,0 +1,47 @@
+/* chessboard */
+
+.chessboard{
+    width: 562px;
+    height: 562px;
+    margin-left: 50px;
+    margin-top: 50px;
+    background-color: red;
+}
+
+.board{
+    display: grid;
+    grid-template-columns: repeat(8,70px);
+    grid-template-rows: repeat(8,70px);
+}
+
+.box{
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    border: 1px black solid;   
+}
+
+.boxPiece{
+    background-color: blue;
+}
+
+.boxPossibleMove{
+    background-color: red;
+}
+
+
+/* pieces */
+
+.piece{
+    width: 60%;
+    height: 60%;
+    margin-top: 20%;
+    margin-left: 20%;
+}
+
+.piece.white{
+    background-color: yellow;
+}
+.piece.black{
+    background-color: grey;
+}
