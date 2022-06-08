@@ -75,6 +75,55 @@ let colorBoxPossibleKK = function(coord,pieceMovement){
     }
 }
 
+/* Here we will check if the king can do the castle (grand or small) 
+* Possible if :
+    - The king never mooved (already check if we go in this function)
+    - The rook never mooved (done)
+    - They is no pieces between the king and the rook
+    - The king isn't in check, pass by a controlled box or ends in a check position
+*/
+let colorBoxPossibleCastle = function(coordK){
+    let rooks = document.querySelectorAll('.rook.castle.'+whoPlay)  // the list of the rook(s) which have never mooved (and the good piece color btw)
+    for(let i = 0; i<rooks.length;i++){
+        let castlePossible = true //true if the rook if possible, false otherwise
+        let boxR = rooks[i].parentNode
+        let coordR = coordonatePiece(boxR)
+        if(coordR < coordK){
+            castlePossible = checkNoPieceBetwenKingRook(coordR,coordK,castlePossible)
+            addClassListCastleKing(castlePossible,-1,coordK)
+        } else {
+            castlePossible = checkNoPieceBetwenKingRook(coordK,coordR,castlePossible)
+            addClassListCastleKing(castlePossible,1,coordK)
+        }
+        //console.log(castlePossible)
+    }
+}
+
+//function which add the classlists : .boxPossibleMove and .castleKing (on the box where the king will go if he want to castle)
+let addClassListCastleKing = function(castlePossible,i,coord){
+    if(castlePossible){
+        coord = coord + i * 20
+        document.querySelector('#box'+coord).classList.add('boxPossibleMove')
+        document.querySelector('#box'+coord).classList.add('castleKing')
+    }
+}
+
+// function which permite to check if they are piece(s) between the rook and the king
+let checkNoPieceBetwenKingRook = function(coordMin,coordMax,castlePossible){
+    coordMin += 10
+    while(coordMin < coordMax && castlePossible === true){
+        let boxTest = document.querySelector('#box'+coordMin)
+        // here we check if the box is not empty, so we change the value of castlePossible at false
+        if(boxTest.childElementCount == 1){ 
+            //console.log("a piece is present between the rook and the king")
+            castlePossible = false
+        }
+        coordMin += 10
+    }
+    
+    return castlePossible
+}
+
 /* See the available box for the pawn 
         By adding à background color red of the boxes available for the selected piece    
 */
@@ -137,33 +186,50 @@ let delColorBox = function(){
             remColor.classList.remove('boxPossibleMove')
         })
     }
+    if(document.querySelector('.castleKing')){ //when the king can castle
+        document.querySelector('.castleKing').classList.remove('castleKing')
+    }
 }
 
 /* Function for realize the movement  the piece */
 let mouvementPiece = function(box){
     box.appendChild(pieceToMove)
-    pieceToMove = undefined
     delColorBox()
     if(whoPlay === "white"){
         whoPlay = "black"
     } else {
         whoPlay = "white"
     }
+    if(pieceToMove.classList.contains('castle')){
+        pieceToMove.classList.remove('castle')
+    }
+}
+
+/* Function for realize the castle */
+let makeCastle = function(coordActuelR,coordFinalR){
+    let rook = document.querySelector('#box'+coordActuelR).children[0]
+    let boxRookFinal = document.querySelector('#box'+coordFinalR)
+    boxRookFinal.appendChild(rook)
+}
+
+
+// Obtain the coordonate in INT of the box
+let coordonatePiece = function(boxP){
+    return parseInt(boxP.id.replace('box',''),10)
 }
 
 /*------------------ AddEventListener ------------------*/
 
 /* What happens when we click on a piece 
         - show the avalable possibles moovements BY ADDING the css style : .boxPossibleMove
+        - show the selected piece BY ADDING the css style : .boxPiece
 */
 
 pieces.forEach(function(piece){
     piece.addEventListener('click',function(e){
         //check if the piece corresponds to the person who has to play
-        if(!piece.classList.contains(whoPlay)){
-            console.log("Not your turn ! ")
-            
-        } else {
+        if(piece.classList.contains(whoPlay)){
+
             /* DELETE the colored boxes of the previous selected piece 
                 by DELETING the CSS style : .boxPossibleMove and .boxPiece*/
             delColorBox()
@@ -172,7 +238,7 @@ pieces.forEach(function(piece){
 
             // recovers the coordonate of the selected piece
             let box = piece.parentNode
-            let coord = parseInt(box.id.replace('box',''),10) 
+            let coord = coordonatePiece(box) /* parseInt(box.id.replace('box',''),10)  */
             
             //Color in red the available boxes for this piece
             box.classList.add('boxPiece')
@@ -189,6 +255,9 @@ pieces.forEach(function(piece){
                 colorBoxPossibleRBQ(coord,bishopMovement)
             } else if(piece.classList.contains('king')){
                 colorBoxPossibleKK(coord,kingMovement)
+                if(piece.classList.contains('castle')){
+                    colorBoxPossibleCastle(coord)
+                }
             } else if(piece.classList.contains('pawn')){
                 colorBoxPossiblePawn(piece,coord)
             }
@@ -207,12 +276,23 @@ boxs.forEach(function(box){
             } 
             //the coordonate or the box that we choose
             let coord = parseInt(box.id.replace('box',''),10)
+            
+
             //Here we check if we need to promote a pawn in (queen, rook, bishop, knight)
             if(pieceToMove.classList.contains("pawn") && coord%10 ===7 || pieceToMove.classList.contains("pawn") && coord%10 ===0){
                 boxPromote = box
                 promDialog.showModal()
                 promoteChose = document.querySelector('input[name="promote"]:checked').value
-            } else {
+            } 
+            //Here we check if we are going to make castle
+            else if(box.classList.contains("castleKing")){ 
+                if(Math.trunc(coord/10) === 2){
+                    makeCastle(coord - 20,coord + 10)  
+                } else {
+                    makeCastle(coord + 10,coord - 10)
+                }
+                mouvementPiece(this)
+            } else { //Here we call the function in order to realize the mouvement of the piece
                 mouvementPiece(this)
             }
         }   
